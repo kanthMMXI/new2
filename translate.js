@@ -12,31 +12,31 @@ function speakTranslation() {
         "tl": "tl-PH"   // Tagalog (Philippines)
     };
 
-    let selectedLang = speechLangMap[langCode] || "en-US"; // Default fallback
+    let selectedLang = speechLangMap[langCode] || "en-US"; // Default to English
 
     let utterance = new SpeechSynthesisUtterance(translatedText);
     utterance.lang = selectedLang;
     utterance.rate = 1; // Normal speed
 
-    // Try setting a proper voice
-    let voices = speechSynthesis.getVoices();
-    let selectedVoice = voices.find(voice => voice.lang.startsWith(selectedLang));
+    // Clear any ongoing speech before speaking
+    speechSynthesis.cancel();
 
-    if (selectedVoice) {
-        utterance.voice = selectedVoice;
-    } else {
-        console.warn("No suitable voice found for", selectedLang, "- using default.");
+    function speakNow() {
+        let voices = speechSynthesis.getVoices();
+        let selectedVoice = voices.find(voice => voice.lang.startsWith(selectedLang));
+
+        if (selectedVoice) {
+            utterance.voice = selectedVoice;
+        }
+
+        console.log("Speaking:", translatedText, "in", selectedLang);
+        speechSynthesis.speak(utterance);
     }
 
-    console.log("Speaking:", translatedText, "in", selectedLang);
-
     // Ensure voices are loaded before speaking
-    speechSynthesis.onvoiceschanged = () => {
-        speechSynthesis.speak(utterance);
-    };
-
-    // Speak after a slight delay to prevent Chrome issues
-    setTimeout(() => {
-        speechSynthesis.speak(utterance);
-    }, 200);
+    if (speechSynthesis.getVoices().length === 0) {
+        speechSynthesis.onvoiceschanged = speakNow;
+    } else {
+        speakNow();
+    }
 }
